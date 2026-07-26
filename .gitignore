@@ -33,3 +33,7 @@ release.properties
 /tmp/
 /local/
 .vscode/
+.classpath
+.project
+.settings/
+.factorypath
