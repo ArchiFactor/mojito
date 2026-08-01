@@ -1,6 +1,7 @@
 package com.box.l10n.mojito.entity;
 
 import com.box.l10n.mojito.entity.security.user.User;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
@@ -8,7 +9,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.springframework.data.annotation.CreatedBy;
 
 /**
@@ -21,11 +25,11 @@ import org.springframework.data.annotation.CreatedBy;
     attributeNodes = {@NamedAttributeNode("tmTextUnit")})
 public class TranslationKitTextUnit extends AuditableEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "translation_kit_id",
-      foreignKey = @ForeignKey(name = "FK__TRANSLATION_KIT_TEXT_UNIT__TRANSLATION_KIT__ID"))
-  private TranslationKit translationKit;
+  @Transient
+private TranslationKit translationKit;
+
+  @Column(name = "translation_kit_id")
+  private Long translationKitId;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(
@@ -94,11 +98,16 @@ public class TranslationKitTextUnit extends AuditableEntity {
   private String detectedLanguageException;
 
   public TranslationKit getTranslationKit() {
-    return translationKit;
-  }
+	if (translationKit == null && translationKitId != null && ServiceFactory.isContainerAvailable()) {
+		TranslationKitService translationKitService = ServiceFactory.getTranslationKitService();
+		translationKit = translationKitService.getTranslationKitById(translationKitId);
+	}
+	return translationKit;
+}
 
   public void setTranslationKit(TranslationKit translationKit) {
     this.translationKit = translationKit;
+	this.translationKitId = translationKit != null ? translationKit.getId() : null;
   }
 
   public TMTextUnit getTmTextUnit() {
@@ -163,5 +172,13 @@ public class TranslationKitTextUnit extends AuditableEntity {
 
   public void setDetectedLanguageException(String detectedLanguageException) {
     this.detectedLanguageException = detectedLanguageException;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.translationKit != null) {
+		this.translationKitId = this.translationKit.getId();
+	}
   }
 }

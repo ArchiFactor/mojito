@@ -1,6 +1,7 @@
 package com.box.l10n.mojito.entity;
 
 import com.box.l10n.mojito.entity.security.user.User;
+import com.box.l10n.mojito.entity.security.user.UserService;
 import com.box.l10n.mojito.rest.View;
 import com.box.l10n.mojito.service.tm.search.StatusFilter;
 import com.box.l10n.mojito.service.translationkit.TranslationKitExportedImportedAndCurrentTUV;
@@ -18,8 +19,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SqlResultSetMapping;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.Set;
 import org.hibernate.annotations.NamedNativeQueries;
 import org.hibernate.annotations.NamedNativeQuery;
@@ -81,12 +85,12 @@ public class TranslationKit extends AuditableEntity {
     REVIEW
   }
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "locale_id",
-      foreignKey = @ForeignKey(name = "FK__TRANSLATION_KIT__LOCALE__ID"))
-  @JsonView(View.DropSummary.class)
+  @Transient
+@JsonView(View.DropSummary.class)
   private Locale locale;
+
+  @Column(name = "locale_id")
+  private Long localeId;
 
   @JsonBackReference
   @ManyToOne(fetch = FetchType.LAZY)
@@ -124,12 +128,12 @@ public class TranslationKit extends AuditableEntity {
           @ForeignKey(name = "FK__TRANSLATION_KIT_NOT_FOUND_TEXT_UNIT_IDS__TRANSLATION_KIT__ID"))
   private Set<String> notFoundTextUnitIds;
 
-  @CreatedBy
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = BaseEntity.CreatedByUserColumnName,
-      foreignKey = @ForeignKey(name = "FK__TRANSLATION_KIT__USER__ID"))
+  @Transient
+@CreatedBy
   protected User createdByUser;
+
+  @Column(name = "created_by_user_id")
+  private Long createdByUserId;
 
   public Boolean getImported() {
     return imported;
@@ -140,19 +144,29 @@ public class TranslationKit extends AuditableEntity {
   }
 
   public User getCreatedByUser() {
-    return createdByUser;
-  }
+	if (createdByUser == null && createdByUserId != null && ServiceFactory.isContainerAvailable()) {
+		UserService userService = ServiceFactory.getUserService();
+		createdByUser = userService.getUserById(createdByUserId);
+	}
+	return createdByUser;
+}
 
   public void setCreatedByUser(User createdByUser) {
     this.createdByUser = createdByUser;
+	this.createdByUserId = createdByUser != null ? createdByUser.getId() : null;
   }
 
   public Locale getLocale() {
-    return locale;
-  }
+	if (locale == null && localeId != null && ServiceFactory.isContainerAvailable()) {
+		LocaleService localeService = ServiceFactory.getLocaleService();
+		locale = localeService.getLocaleById(localeId);
+	}
+	return locale;
+}
 
   public void setLocale(Locale locale) {
     this.locale = locale;
+	this.localeId = locale != null ? locale.getId() : null;
   }
 
   public Drop getDrop() {
@@ -217,5 +231,16 @@ public class TranslationKit extends AuditableEntity {
 
   public void setWordCount(Long wordCount) {
     this.wordCount = wordCount;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.locale != null) {
+		this.localeId = this.locale.getId();
+	}
+	if (this.createdByUser != null) {
+		this.createdByUserId = this.createdByUser.getId();
+	}
   }
 }

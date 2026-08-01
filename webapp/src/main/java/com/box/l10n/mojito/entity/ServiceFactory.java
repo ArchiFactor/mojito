@@ -10,6 +10,10 @@ import com.box.l10n.mojito.entity.RepositoryService;
 import com.box.l10n.mojito.entity.PullRunTextUnitVariantService;
 import com.box.l10n.mojito.entity.TMTextUnitService;
 import com.box.l10n.mojito.entity.AssetService;
+import com.box.l10n.mojito.entity.PollableTaskService;
+import com.box.l10n.mojito.entity.TranslationKitService;
+import com.box.l10n.mojito.entity.security.user.UserService;
+import com.box.l10n.mojito.entity.LocaleService;
 
 @Component
 public class ServiceFactory implements ApplicationContextAware {
@@ -43,5 +47,21 @@ public class ServiceFactory implements ApplicationContextAware {
     public static AssetService getAssetService() {
         return applicationContext.getBean(AssetService.class);
     }
+
+	public static PollableTaskService getPollableTaskService() {
+		return applicationContext.getBean(PollableTaskService.class);
+	}
+
+	public static TranslationKitService getTranslationKitService() {
+		return applicationContext.getBean(TranslationKitService.class);
+	}
+
+	public static UserService getUserService() {
+		return applicationContext.getBean(UserService.class);
+	}
+
+	public static LocaleService getLocaleService() {
+		return applicationContext.getBean(LocaleService.class);
+	}
 
 }

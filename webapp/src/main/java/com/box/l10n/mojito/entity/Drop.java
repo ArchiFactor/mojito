@@ -1,6 +1,7 @@
 package com.box.l10n.mojito.entity;
 
 import com.box.l10n.mojito.entity.security.user.User;
+import com.box.l10n.mojito.entity.security.user.UserService;
 import com.box.l10n.mojito.rest.View;
 import com.box.l10n.mojito.service.drop.exporter.DropExporterType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -18,7 +19,10 @@ import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.NamedSubgraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.ZonedDateTime;
 import java.util.Set;
 import org.springframework.data.annotation.CreatedBy;
@@ -63,28 +67,30 @@ public class Drop extends AuditableEntity {
   @JsonView(View.DropSummary.class)
   String dropExporterConfig;
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "import_pollable_task_id",
-      foreignKey = @ForeignKey(name = "FK__DROP__IMPORT_POLLABLE_TASK__ID"))
-  @JsonView(View.DropSummary.class)
+  @Transient
+@JsonView(View.DropSummary.class)
   PollableTask importPollableTask;
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "export_pollable_task_id",
-      foreignKey = @ForeignKey(name = "FK__DROP__EXPORT_POLLABLE_TASK__ID"))
-  @JsonView(View.DropSummary.class)
+  @Column(name = "import_pollable_task_id", unique = true)
+  private Long importPollableTaskId;
+
+  @Transient
+@JsonView(View.DropSummary.class)
   PollableTask exportPollableTask;
+
+  @Column(name = "export_pollable_task_id", unique = true)
+  private Long exportPollableTaskId;
 
   @OneToMany(mappedBy = "drop")
   @JsonView(View.DropSummary.class)
   private Set<TranslationKit> translationKits;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "repository_id", foreignKey = @ForeignKey(name = "FK__DROP__REPOSITORY__ID"))
-  @JsonView(View.DropSummary.class)
+  @Transient
+@JsonView(View.DropSummary.class)
   private Repository repository;
+
+  @Column(name = "repository_id")
+  private Long repositoryId;
 
   /**
    * For now we keep track of the latest import only, actually import will be additive if we track
@@ -102,13 +108,13 @@ public class Drop extends AuditableEntity {
   @JsonView(View.DropSummary.class)
   protected Boolean canceled;
 
-  @CreatedBy
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = BaseEntity.CreatedByUserColumnName,
-      foreignKey = @ForeignKey(name = "FK__DROP__USER__ID"))
+  @Transient
+@CreatedBy
   @JsonView(View.DropSummary.class)
   protected User createdByUser;
+
+  @Column(name = "created_by_user_id")
+  private Long createdByUserId;
 
   @Column(name = "exportFailed")
   @JsonView(View.DropSummary.class)
@@ -123,11 +129,16 @@ public class Drop extends AuditableEntity {
   private Boolean partiallyImported = false;
 
   public User getCreatedByUser() {
-    return createdByUser;
-  }
+	if (createdByUser == null && createdByUserId != null && ServiceFactory.isContainerAvailable()) {
+		UserService userService = ServiceFactory.getUserService();
+		createdByUser = userService.getUserById(createdByUserId);
+	}
+	return createdByUser;
+}
 
   public void setCreatedByUser(User createdByUser) {
     this.createdByUser = createdByUser;
+	this.createdByUserId = createdByUser != null ? createdByUser.getId() : null;
   }
 
   @JsonManagedReference
@@ -140,11 +151,16 @@ public class Drop extends AuditableEntity {
   }
 
   public Repository getRepository() {
-    return repository;
-  }
+	if (repository == null && repositoryId != null && ServiceFactory.isContainerAvailable()) {
+		RepositoryService repositoryService = ServiceFactory.getRepositoryService();
+		repository = repositoryService.getRepositoryById(repositoryId);
+	}
+	return repository;
+}
 
   public void setRepository(Repository repository) {
     this.repository = repository;
+	this.repositoryId = repository != null ? repository.getId() : null;
   }
 
   public DropExporterType getDropExporterType() {
@@ -180,19 +196,29 @@ public class Drop extends AuditableEntity {
   }
 
   public PollableTask getImportPollableTask() {
-    return importPollableTask;
-  }
+	if (importPollableTask == null && importPollableTaskId != null && ServiceFactory.isContainerAvailable()) {
+		PollableTaskService pollableTaskService = ServiceFactory.getPollableTaskService();
+		importPollableTask = pollableTaskService.getPollableTaskById(importPollableTaskId);
+	}
+	return importPollableTask;
+}
 
   public void setImportPollableTask(PollableTask importPollableTask) {
     this.importPollableTask = importPollableTask;
+	this.importPollableTaskId = importPollableTask != null ? importPollableTask.getId() : null;
   }
 
   public PollableTask getExportPollableTask() {
-    return exportPollableTask;
-  }
+	if (exportPollableTask == null && exportPollableTaskId != null && ServiceFactory.isContainerAvailable()) {
+		PollableTaskService pollableTaskService = ServiceFactory.getPollableTaskService();
+		exportPollableTask = pollableTaskService.getPollableTaskById(exportPollableTaskId);
+	}
+	return exportPollableTask;
+}
 
   public void setExportPollableTask(PollableTask exportPollableTask) {
     this.exportPollableTask = exportPollableTask;
+	this.exportPollableTaskId = exportPollableTask != null ? exportPollableTask.getId() : null;
   }
 
   public String getName() {
@@ -225,5 +251,22 @@ public class Drop extends AuditableEntity {
 
   public void setPartiallyImported(Boolean partiallyImported) {
     this.partiallyImported = partiallyImported;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.importPollableTask != null) {
+		this.importPollableTaskId = this.importPollableTask.getId();
+	}
+	if (this.exportPollableTask != null) {
+		this.exportPollableTaskId = this.exportPollableTask.getId();
+	}
+	if (this.repository != null) {
+		this.repositoryId = this.repository.getId();
+	}
+	if (this.createdByUser != null) {
+		this.createdByUserId = this.createdByUser.getId();
+	}
   }
 }
