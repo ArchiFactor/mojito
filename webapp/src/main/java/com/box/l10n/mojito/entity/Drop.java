@@ -16,7 +16,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
-import jakarta.persistence.NamedSubgraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -36,23 +35,7 @@ import org.springframework.data.annotation.CreatedBy;
 @Table(name = "`drop`")
 @NamedEntityGraph(
     name = "Drop.legacy",
-    attributeNodes = {
-      @NamedAttributeNode(value = "repository", subgraph = "Drop.legacy.repository"),
-      @NamedAttributeNode(value = "importPollableTask", subgraph = "Drop.legacy.subTask"),
-      @NamedAttributeNode(value = "exportPollableTask", subgraph = "Drop.legacy.subTask"),
-      @NamedAttributeNode(value = "translationKits", subgraph = "Drop.legacy.translationKits")
-    },
-    subgraphs = {
-      @NamedSubgraph(
-          name = "Drop.legacy.subTask",
-          attributeNodes = {@NamedAttributeNode("subTasks")}),
-      @NamedSubgraph(
-          name = "Drop.legacy.repository",
-          attributeNodes = {@NamedAttributeNode("createdByUser")}),
-      @NamedSubgraph(
-          name = "Drop.legacy.translationKits",
-          attributeNodes = {@NamedAttributeNode("locale")})
-    })
+    attributeNodes = {@NamedAttributeNode(value = "translationKits")})
 public class Drop extends AuditableEntity {
 
   @Column(name = "drop_exporter_type")

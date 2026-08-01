@@ -281,15 +281,15 @@ public class TranslationKitService {
         translationKitRepository.findById(translationKitId).orElse(null);
 
     translationKit.setNumTranslatedTranslationKitUnits(
-        translationKitTextUnitRepository.countByTranslationKitAndImportedTmTextUnitVariantIsNotNull(
-            translationKit));
+        translationKitTextUnitRepository
+            .countByTranslationKitIdAndImportedTmTextUnitVariantIsNotNull(translationKit.getId()));
     translationKit.setNumSourceEqualsTarget(
-        translationKitTextUnitRepository.countByTranslationKitAndSourceEqualsTargetTrue(
-            translationKit));
+        translationKitTextUnitRepository.countByTranslationKitIdAndSourceEqualsTargetTrue(
+            translationKit.getId()));
     translationKit.setNumBadLanguageDetections(
         translationKitTextUnitRepository
-            .countByTranslationKitAndDetectedLanguageNotEqualsDetectedLanguageExpected(
-                translationKit));
+            .countByTranslationKitIdAndDetectedLanguageNotEqualsDetectedLanguageExpected(
+                translationKit.getId()));
     translationKit.setNotFoundTextUnitIds(notFoundTextUnitIds);
     if (translationKit.getNumTranslationKitUnits() == 0
         || translationKit.getNumTranslatedTranslationKitUnits() > 0) {

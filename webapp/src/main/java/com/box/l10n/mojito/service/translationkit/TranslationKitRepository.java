@@ -1,7 +1,6 @@
 package com.box.l10n.mojito.service.translationkit;
 
 import com.box.l10n.mojito.entity.Drop;
-import com.box.l10n.mojito.entity.Locale;
 import com.box.l10n.mojito.entity.TranslationKit;
 import java.util.List;
 import java.util.Optional;
@@ -22,5 +21,5 @@ public interface TranslationKitRepository extends JpaRepository<TranslationKit, 
 
   List<TranslationKit> findByDropId(Long dropId);
 
-  TranslationKit findByDropAndLocale(Drop drop, Locale locale);
+  TranslationKit findByDropAndLocaleId(Drop drop, Long localeId);
 }

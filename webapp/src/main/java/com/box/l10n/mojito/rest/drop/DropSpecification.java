@@ -2,14 +2,13 @@ package com.box.l10n.mojito.rest.drop;
 
 import com.box.l10n.mojito.entity.Drop;
 import com.box.l10n.mojito.entity.Drop_;
-import com.box.l10n.mojito.entity.PollableTask_;
-import com.box.l10n.mojito.entity.Repository_;
+import com.box.l10n.mojito.entity.ServiceFactory;
 import com.box.l10n.mojito.specification.SingleParamSpecification;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
@@ -30,6 +29,16 @@ public class DropSpecification {
       public Predicate toPredicate(
           Root<Drop> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 
+        // The finished state of the import pollable task has to be resolved through the
+        // PollableTask service since Drop only keeps the foreign key to it.
+        List<Long> finishedPollableTaskIds =
+            ServiceFactory.getPollableTaskService().getFinishedPollableTaskIds();
+
+        Predicate importPollableTaskFinished =
+            finishedPollableTaskIds.isEmpty()
+                ? builder.disjunction()
+                : root.get(Drop_.importPollableTaskId).in(finishedPollableTaskIds);
+
         Predicate predicate;
 
         if (imported) {
@@ -40,20 +49,16 @@ public class DropSpecification {
                   builder.or(
                       builder.isNull(root.get(Drop_.importFailed)),
                       builder.isFalse(root.get(Drop_.importFailed))),
-                  builder.isNotNull(root.get(Drop_.importPollableTask)),
-                  builder.isNotNull(
-                      root.join(Drop_.importPollableTask, JoinType.LEFT)
-                          .get(PollableTask_.finishedDate)));
+                  builder.isNotNull(root.get(Drop_.importPollableTaskId)),
+                  importPollableTaskFinished);
         } else {
           predicate =
               builder.or(
                   builder.isTrue(root.get(Drop_.partiallyImported)),
                   builder.isNull(root.get(Drop_.lastImportedDate)),
                   builder.isTrue(root.get(Drop_.importFailed)),
-                  builder.isNull(root.get(Drop_.importPollableTask)),
-                  builder.isNull(
-                      root.join(Drop_.importPollableTask, JoinType.LEFT)
-                          .get(PollableTask_.finishedDate)));
+                  builder.isNull(root.get(Drop_.importPollableTaskId)),
+                  builder.not(importPollableTaskFinished));
         }
 
         return predicate;
@@ -93,7 +98,7 @@ public class DropSpecification {
     return new SingleParamSpecification<Drop>(repositoryId) {
       public Predicate toPredicate(
           Root<Drop> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-        return builder.equal(root.get(Drop_.repository).get(Repository_.id), repositoryId);
+        return builder.equal(root.get(Drop_.repositoryId), repositoryId);
       }
     };
   }
