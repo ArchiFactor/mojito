@@ -1,6 +1,5 @@
 package com.box.l10n.mojito.service.pullrun;
 
-import com.box.l10n.mojito.entity.Asset;
 import com.box.l10n.mojito.entity.PullRun;
 import com.box.l10n.mojito.entity.PullRunAsset;
 import java.time.ZonedDateTime;
@@ -20,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface PullRunAssetRepository extends JpaRepository<PullRunAsset, Long> {
   List<PullRunAsset> findByPullRun(PullRun pullRun);
 
-  Optional<PullRunAsset> findByPullRunAndAsset(PullRun pullRun, Asset asset);
+  Optional<PullRunAsset> findByPullRunAndAssetId(PullRun pullRun, Long assetId);
 
   @Transactional
   void deleteByPullRun(PullRun pullRun);

@@ -6,6 +6,7 @@ import com.box.l10n.mojito.entity.PushRun;
 import com.box.l10n.mojito.entity.PushRunAsset;
 import com.box.l10n.mojito.entity.Repository;
 import com.box.l10n.mojito.entity.TMTextUnit;
+import com.box.l10n.mojito.entity.TMTextUnitService;
 import com.box.l10n.mojito.service.commit.CommitToPushRunRepository;
 import com.google.common.collect.Lists;
 import jakarta.persistence.EntityManager;
@@ -50,19 +51,23 @@ public class PushRunService {
 
   final PushRunAssetTmTextUnitRepository pushRunAssetTmTextUnitRepository;
 
+  final TMTextUnitService tmTextUnitService;
+
   public PushRunService(
       EntityManager entityManager,
       JdbcTemplate jdbcTemplate,
       CommitToPushRunRepository commitToPushRunRepository,
       PushRunRepository pushRunRepository,
       PushRunAssetRepository pushRunAssetRepository,
-      PushRunAssetTmTextUnitRepository pushRunAssetTmTextUnitRepository) {
+      PushRunAssetTmTextUnitRepository pushRunAssetTmTextUnitRepository,
+      TMTextUnitService tmTextUnitService) {
     this.entityManager = entityManager;
     this.jdbcTemplate = jdbcTemplate;
     this.commitToPushRunRepository = commitToPushRunRepository;
     this.pushRunRepository = pushRunRepository;
     this.pushRunAssetRepository = pushRunAssetRepository;
     this.pushRunAssetTmTextUnitRepository = pushRunAssetTmTextUnitRepository;
+    this.tmTextUnitService = tmTextUnitService;
   }
 
   /** Creates a new PushRun entry with a new UUID as the logical name. */
@@ -99,7 +104,7 @@ public class PushRunService {
   @Transactional
   public void associatePushRunToTextUnitIds(PushRun pushRun, Asset asset, List<Long> textUnitIds) {
     PushRunAsset pushRunAsset =
-        pushRunAssetRepository.findByPushRunAndAsset(pushRun, asset).orElse(null);
+        pushRunAssetRepository.findByPushRunAndAssetId(pushRun, asset.getId()).orElse(null);
 
     if (pushRunAsset == null) {
       pushRunAsset = new PushRunAsset();
@@ -121,7 +126,10 @@ public class PushRunService {
 
   /** Retrieves the list of TextUnits associated with a PushRun. */
   public List<TMTextUnit> getPushRunTextUnits(PushRun pushRun, Pageable pageable) {
-    return pushRunAssetTmTextUnitRepository.findByPushRun(pushRun, pageable);
+    List<Long> tmTextUnitIds =
+        pushRunAssetTmTextUnitRepository.findTmTextUnitIdsByPushRun(pushRun, pageable);
+
+    return tmTextUnitService.getTMTextUnitsByIds(tmTextUnitIds);
   }
 
   void saveTextUnits(PushRunAsset pushRunAsset, List<Long> textUnitIds, ZonedDateTime createdTime) {

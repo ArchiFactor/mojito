@@ -1,10 +1,11 @@
 package com.box.l10n.mojito.service.pullrun;
 
 import com.box.l10n.mojito.entity.PullRun;
-import com.box.l10n.mojito.entity.PullRunAsset;
 import com.box.l10n.mojito.entity.PullRunTextUnitVariant;
+import com.box.l10n.mojito.entity.ServiceFactory;
 import com.box.l10n.mojito.entity.TMTextUnitVariant;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface PullRunTextUnitVariantRepository
     extends JpaRepository<PullRunTextUnitVariant, Long> {
 
-  List<PullRunTextUnitVariant> findByPullRunAsset(PullRunAsset pullRunAsset, Pageable pageable);
+  List<PullRunTextUnitVariant> findByPullRunAssetId(Long pullRunAssetId, Pageable pageable);
 
   List<PullRunTextUnitVariant> findByTmTextUnitVariant_TmTextUnitIdAndLocaleId(
       Long tmTextUnitId, Long localeId);
@@ -32,13 +33,28 @@ public interface PullRunTextUnitVariantRepository
   @Query(
       """
       select prtuv.tmTextUnitVariant from PullRunTextUnitVariant prtuv
-      inner join prtuv.pullRunAsset pra
-      inner join pra.pullRun pr where pr = :pullRun
+      where prtuv.pullRunAssetId in :pullRunAssetIds
       """)
-  List<TMTextUnitVariant> findByPullRun(@Param("pullRun") PullRun pullRun, Pageable pageable);
+  List<TMTextUnitVariant> findByPullRunAssetIdIn(
+      @Param("pullRunAssetIds") List<Long> pullRunAssetIds, Pageable pageable);
+
+  /**
+   * The PullRunAsset ids have to be resolved through the PullRunAsset service since {@link
+   * PullRunTextUnitVariant} only keeps the foreign key to it.
+   */
+  default List<TMTextUnitVariant> findByPullRun(PullRun pullRun, Pageable pageable) {
+    List<Long> pullRunAssetIds =
+        ServiceFactory.getPullRunAssetService().getPullRunAssetIdsByPullRunId(pullRun.getId());
+
+    if (pullRunAssetIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    return findByPullRunAssetIdIn(pullRunAssetIds, pageable);
+  }
 
   @Transactional
-  void deleteByPullRunAsset(PullRunAsset pullRunAsset);
+  void deleteByPullRunAssetId(Long pullRunAssetId);
 
   @Transactional
   @Modifying

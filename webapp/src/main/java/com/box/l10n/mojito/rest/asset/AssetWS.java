@@ -446,7 +446,7 @@ public class AssetWS {
     PushRun pushRun;
 
     Optional<PushRun> existingPushRun =
-        pushRunRepository.findByNameAndRepository(pushRunName, repository);
+        pushRunRepository.findByNameAndRepositoryId(pushRunName, repository.getId());
     if (existingPushRun.isPresent()) {
       pushRun = existingPushRun.get();
     } else {

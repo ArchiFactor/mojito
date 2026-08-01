@@ -3,7 +3,6 @@ package com.box.l10n.mojito.service.pushrun;
 import com.box.l10n.mojito.entity.PushRun;
 import com.box.l10n.mojito.entity.PushRunAsset;
 import com.box.l10n.mojito.entity.PushRunAssetTmTextUnit;
-import com.box.l10n.mojito.entity.TMTextUnit;
 import java.time.ZonedDateTime;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -28,11 +27,11 @@ public interface PushRunAssetTmTextUnitRepository
 
   @Query(
       """
-      select prattu.tmTextUnit from PushRunAssetTmTextUnit prattu
+      select prattu.tmTextUnitId from PushRunAssetTmTextUnit prattu
       inner join prattu.pushRunAsset pra
       inner join pra.pushRun pr where pr = :pushRun
       """)
-  List<TMTextUnit> findByPushRun(@Param("pushRun") PushRun pushRun, Pageable pageable);
+  List<Long> findTmTextUnitIdsByPushRun(@Param("pushRun") PushRun pushRun, Pageable pageable);
 
   @Transactional
   @Modifying

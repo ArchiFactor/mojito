@@ -230,7 +230,7 @@ public class CommitService {
 
     PushRun pushRun =
         pushRunRepository
-            .findByNameAndRepository(pushRunName, repository)
+            .findByNameAndRepositoryId(pushRunName, repository.getId())
             .orElseThrow(() -> new PushRunWithNameNotFoundException(pushRunName));
 
     associateCommitToPushRun(commit, pushRun);

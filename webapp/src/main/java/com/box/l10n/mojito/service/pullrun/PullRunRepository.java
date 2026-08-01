@@ -25,8 +25,8 @@ public interface PullRunRepository extends JpaRepository<PullRun, Long> {
           select p from PullRun p
           left join CommitToPullRun cpr on cpr.pullRun = p
           left join Commit c on c = cpr.commit
-          where c.name in :commitNames and c.repository.id = :repositoryId
-          and p.repository.id = :repositoryId order by p.createdDate desc
+          where c.name in :commitNames and c.repositoryId = :repositoryId
+          and p.repositoryId = :repositoryId order by p.createdDate desc
           """)
   List<PullRun> findLatestByCommitNames(
       @Param("commitNames") List<String> commitNames,

@@ -1,7 +1,6 @@
 package com.box.l10n.mojito.service.pushrun;
 
 import com.box.l10n.mojito.entity.PushRun;
-import com.box.l10n.mojito.entity.Repository;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +24,7 @@ public interface PushRunRepository extends JpaRepository<PushRun, Long> {
   @EntityGraph(value = "PushRun.legacy", type = EntityGraphType.FETCH)
   Optional<PushRun> findById(Long aLong);
 
-  Optional<PushRun> findByNameAndRepository(String name, Repository repository);
+  Optional<PushRun> findByNameAndRepositoryId(String name, Long repositoryId);
 
   @Query(
       value =
@@ -33,8 +32,8 @@ public interface PushRunRepository extends JpaRepository<PushRun, Long> {
               select p from PushRun p
               join CommitToPushRun cpr on cpr.pushRun = p
               join Commit c on c = cpr.commit
-              where c.name in :commitNames and c.repository.id = :repositoryId
-          and p.repository.id = :repositoryId order by p.createdDate desc
+              where c.name in :commitNames and c.repositoryId = :repositoryId
+          and p.repositoryId = :repositoryId order by p.createdDate desc
           """)
   List<PushRun> findLatestByCommitNames(
       @Param("commitNames") List<String> commitNames,

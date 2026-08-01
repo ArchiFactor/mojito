@@ -10,7 +10,6 @@ import com.box.l10n.mojito.entity.PullRun;
 import com.box.l10n.mojito.entity.PullRun_;
 import com.box.l10n.mojito.entity.PushRun;
 import com.box.l10n.mojito.entity.PushRun_;
-import com.box.l10n.mojito.entity.Repository_;
 import com.box.l10n.mojito.specification.SingleParamSpecification;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -36,7 +35,7 @@ public class CommitSpecification {
     return new SingleParamSpecification<Commit>(repositoryId) {
       public Predicate toPredicate(
           Root<Commit> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-        return builder.equal(root.get(Commit_.repository).get(Repository_.id), repositoryId);
+        return builder.equal(root.get(Commit_.repositoryId), repositoryId);
       }
     };
   }

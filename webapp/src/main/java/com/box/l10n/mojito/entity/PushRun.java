@@ -42,14 +42,7 @@ import org.hibernate.annotations.BatchSize;
     subgraphs = {
       @NamedSubgraph(
           name = "PushRun.legacy.pushRunAssets",
-          attributeNodes = {
-            @NamedAttributeNode(
-                value = "pushRunAssetTmTextUnits",
-                subgraph = "PushRun.legacy.pushRunAssetTmTextUnits")
-          }),
-      @NamedSubgraph(
-          name = "PushRun.legacy.pushRunAssetTmTextUnits",
-          attributeNodes = {@NamedAttributeNode(value = "tmTextUnit")})
+          attributeNodes = {@NamedAttributeNode(value = "pushRunAssetTmTextUnits")})
     })
 public class PushRun extends SettableAuditableEntity {
 

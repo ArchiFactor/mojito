@@ -51,7 +51,7 @@ public class PullRunAssetService {
 
   public PullRunAsset getOrCreate(PullRun pullRun, Asset asset) {
     return pullRunAssetRepository
-        .findByPullRunAndAsset(pullRun, asset)
+        .findByPullRunAndAssetId(pullRun, asset.getId())
         .orElseGet(() -> createPullRunAsset(pullRun, asset));
   }
 
