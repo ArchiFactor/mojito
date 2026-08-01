@@ -2,6 +2,7 @@ package com.box.l10n.mojito.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
@@ -9,7 +10,11 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import java.util.HashSet;
 import java.util.Set;
 import org.hibernate.annotations.BatchSize;
 
@@ -36,14 +41,16 @@ public class PullRunAsset extends SettableAuditableEntity {
       foreignKey = @ForeignKey(name = "FK__PULL_RUN_ASSET__PULL_RUN_ID"))
   private PullRun pullRun;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JsonBackReference
-  @JoinColumn(name = "asset_id", foreignKey = @ForeignKey(name = "FK__PULL_RUN_ASSET__ASSET_ID"))
+  @Transient
+@JsonBackReference
   private Asset asset;
 
-  @OneToMany(mappedBy = "pullRunAsset")
-  @JsonManagedReference
-  private Set<PullRunTextUnitVariant> pullRunTextUnitVariants;
+  @Column(name = "asset_id")
+  private Long assetId;
+
+  @Transient
+@JsonManagedReference
+  private Set<PullRunTextUnitVariant> pullRunTextUnitVariants = new HashSet<>();
 
   public PullRun getPullRun() {
     return pullRun;
@@ -54,18 +61,36 @@ public class PullRunAsset extends SettableAuditableEntity {
   }
 
   public Asset getAsset() {
-    return asset;
-  }
+	if (asset == null && assetId != null && ServiceFactory.isContainerAvailable()) {
+		AssetService assetService = ServiceFactory.getAssetService();
+		asset = assetService.getAssetById(assetId);
+	}
+	return asset;
+}
 
   public void setAsset(Asset asset) {
     this.asset = asset;
+	this.assetId = asset != null ? asset.getId() : null;
   }
 
   public Set<PullRunTextUnitVariant> getPullRunTextUnitVariants() {
-    return pullRunTextUnitVariants;
-  }
+	if (pullRunTextUnitVariants.isEmpty() && getId() != null && ServiceFactory.isContainerAvailable()) {
+		PullRunTextUnitVariantService pullRunTextUnitVariantService = ServiceFactory.getPullRunTextUnitVariantService();
+		pullRunTextUnitVariants
+				.addAll(pullRunTextUnitVariantService.getPullRunTextUnitVariantsByPullRunAssetId(getId()));
+	}
+	return pullRunTextUnitVariants;
+}
 
   public void setPullRunTextUnitVariants(Set<PullRunTextUnitVariant> pullRunTextUnitVariants) {
     this.pullRunTextUnitVariants = pullRunTextUnitVariants;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.asset != null) {
+		this.assetId = this.asset.getId();
+	}
   }
 }

@@ -1,13 +1,17 @@
 package com.box.l10n.mojito.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.hibernate.annotations.BatchSize;
 
 /**
@@ -36,12 +40,12 @@ public class PushRunAssetTmTextUnit extends SettableAuditableEntity {
       foreignKey = @ForeignKey(name = "FK__PUSH_RUN_ASSET_TM_TEXT_UNIT__PUSH_RUN_ASSET_ID"))
   private PushRunAsset pushRunAsset;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JsonBackReference
-  @JoinColumn(
-      name = "tm_text_unit_id",
-      foreignKey = @ForeignKey(name = "FK__PUSH_RUN_ASSET_TM_TEXT_UNIT__TM_TEXT_UNIT_ID"))
+  @Transient
+@JsonBackReference
   private TMTextUnit tmTextUnit;
+
+  @Column(name = "tm_text_unit_id")
+  private Long tmTextUnitId;
 
   public PushRunAsset getPushRunAsset() {
     return pushRunAsset;
@@ -52,10 +56,23 @@ public class PushRunAssetTmTextUnit extends SettableAuditableEntity {
   }
 
   public TMTextUnit getTmTextUnit() {
-    return tmTextUnit;
-  }
+	if (tmTextUnit == null && tmTextUnitId != null && ServiceFactory.isContainerAvailable()) {
+		TMTextUnitService tMTextUnitService = ServiceFactory.getTMTextUnitService();
+		tmTextUnit = tMTextUnitService.getTMTextUnitById(tmTextUnitId);
+	}
+	return tmTextUnit;
+}
 
   public void setTmTextUnit(TMTextUnit tmTextUnit) {
     this.tmTextUnit = tmTextUnit;
+	this.tmTextUnitId = tmTextUnit != null ? tmTextUnit.getId() : null;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.tmTextUnit != null) {
+		this.tmTextUnitId = this.tmTextUnit.getId();
+	}
   }
 }

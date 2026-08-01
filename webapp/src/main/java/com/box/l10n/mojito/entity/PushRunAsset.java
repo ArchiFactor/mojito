@@ -2,6 +2,7 @@ package com.box.l10n.mojito.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
@@ -9,7 +10,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.HashSet;
 import java.util.Set;
 import org.hibernate.annotations.BatchSize;
@@ -37,9 +41,11 @@ public class PushRunAsset extends SettableAuditableEntity {
       foreignKey = @ForeignKey(name = "FK__PUSH_RUN_ASSET__PUSH_RUN_ID"))
   private PushRun pushRun;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "asset_id", foreignKey = @ForeignKey(name = "FK__PUSH_RUN_ASSET__ASSET_ID"))
-  private Asset asset;
+  @Transient
+private Asset asset;
+
+  @Column(name = "asset_id")
+  private Long assetId;
 
   @JsonManagedReference
   @OneToMany(mappedBy = "pushRunAsset")
@@ -54,11 +60,16 @@ public class PushRunAsset extends SettableAuditableEntity {
   }
 
   public Asset getAsset() {
-    return asset;
-  }
+	if (asset == null && assetId != null && ServiceFactory.isContainerAvailable()) {
+		AssetService assetService = ServiceFactory.getAssetService();
+		asset = assetService.getAssetById(assetId);
+	}
+	return asset;
+}
 
   public void setAsset(Asset asset) {
     this.asset = asset;
+	this.assetId = asset != null ? asset.getId() : null;
   }
 
   public Set<PushRunAssetTmTextUnit> getPushRunAssetTmTextUnits() {
@@ -67,5 +78,13 @@ public class PushRunAsset extends SettableAuditableEntity {
 
   public void setPushRunAssetTmTextUnits(Set<PushRunAssetTmTextUnit> pushRunAssetTmTextUnits) {
     this.pushRunAssetTmTextUnits = pushRunAssetTmTextUnits;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.asset != null) {
+		this.assetId = this.asset.getId();
+	}
   }
 }

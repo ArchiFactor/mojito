@@ -16,7 +16,10 @@ import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.NamedSubgraph;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.ZonedDateTime;
 import java.util.Set;
 import org.hibernate.annotations.BatchSize;
@@ -50,18 +53,18 @@ import org.hibernate.annotations.BatchSize;
     })
 public class PushRun extends SettableAuditableEntity {
 
-  @JsonIgnore
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "repository_id",
-      foreignKey = @ForeignKey(name = "FK__PUSH_RUN__REPOSITORY_ID"))
+  @Transient
+@JsonIgnore
   private Repository repository;
+
+  @Column(name = "repository_id")
+  private Long repositoryId;
 
   /** Avoid serialization of the full Repository object, include only the IDs. */
   @JsonView(View.PushRun.class)
   @JsonProperty("repository_id")
   private Long getRepositoryId() {
-    return repository.getId();
+    return this.getRepository().getId();
   }
 
   /** A unique identifier that is provided for the push run, generally a UUID. */
@@ -75,11 +78,16 @@ public class PushRun extends SettableAuditableEntity {
   private Set<PushRunAsset> pushRunAssets;
 
   public Repository getRepository() {
-    return repository;
-  }
+	if (repository == null && repositoryId != null && ServiceFactory.isContainerAvailable()) {
+		RepositoryService repositoryService = ServiceFactory.getRepositoryService();
+		repository = repositoryService.getRepositoryById(repositoryId);
+	}
+	return repository;
+}
 
   public void setRepository(Repository repository) {
     this.repository = repository;
+	this.repositoryId = repository != null ? repository.getId() : null;
   }
 
   public String getName() {
@@ -104,5 +112,13 @@ public class PushRun extends SettableAuditableEntity {
 
   public void setPushRunAssets(Set<PushRunAsset> pushRunAssetSet) {
     this.pushRunAssets = pushRunAssetSet;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.repository != null) {
+		this.repositoryId = this.repository.getId();
+	}
   }
 }

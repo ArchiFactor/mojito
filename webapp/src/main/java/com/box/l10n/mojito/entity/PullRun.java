@@ -11,7 +11,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.Set;
 import org.hibernate.annotations.BatchSize;
 
@@ -26,11 +29,11 @@ import org.hibernate.annotations.BatchSize;
     indexes = {@Index(name = "UK__PULL_RUN__NAME", columnList = "name", unique = true)})
 @BatchSize(size = 1000)
 public class PullRun extends SettableAuditableEntity {
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(
-      name = "repository_id",
-      foreignKey = @ForeignKey(name = "FK__PULL_RUN__REPOSITORY_ID"))
-  private Repository repository;
+  @Transient
+private Repository repository;
+
+  @Column(name = "repository_id")
+  private Long repositoryId;
 
   /** A unique identifier that is provided for the pull run, generally a UUID. */
   @JsonView(View.CommitDetailed.class)
@@ -42,11 +45,16 @@ public class PullRun extends SettableAuditableEntity {
   private Set<PullRunAsset> pullRunAssets;
 
   public Repository getRepository() {
-    return repository;
-  }
+	if (repository == null && repositoryId != null && ServiceFactory.isContainerAvailable()) {
+		RepositoryService repositoryService = ServiceFactory.getRepositoryService();
+		repository = repositoryService.getRepositoryById(repositoryId);
+	}
+	return repository;
+}
 
   public void setRepository(Repository repository) {
     this.repository = repository;
+	this.repositoryId = repository != null ? repository.getId() : null;
   }
 
   public String getName() {
@@ -63,5 +71,13 @@ public class PullRun extends SettableAuditableEntity {
 
   public void setPullRunAssets(Set<PullRunAsset> pullRunAssets) {
     this.pullRunAssets = pullRunAssets;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.repository != null) {
+		this.repositoryId = this.repository.getId();
+	}
   }
 }

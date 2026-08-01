@@ -1,0 +1,185 @@
+{
+  "tool": "ArchiFactor",
+  "manifestVersion": 1,
+  "refactoring": "Unmap JPA Relationships",
+  "description": "The JPA relationship mappings listed below were unmapped: each association field was made @Transient and is now lazy-loaded through a generated service. Owning sides keep the relationship data in a new foreign-key or element-collection field. The database schema is unchanged, so native SQL queries are unaffected; only object-model queries (JPQL, Criteria API, derived query methods) that traverse the unmapped associations are broken. Relationships that declared cascade or orphanRemoval additionally lose that lifecycle propagation, recorded per relationship under 'droppedSemantics'.",
+  "generatedAt": "2026-08-01T13:34:23.948948500Z",
+  "framework": "Spring Boot",
+  "serviceFactoryClass": "com.box.l10n.mojito.entity.ServiceFactory",
+  "unmappedRelationships": [
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PushRun",
+      "fieldName": "repository",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.Repository",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "repositoryId",
+        "type": "Long",
+        "columnName": "repository_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.RepositoryService",
+        "method": "Repository getRepositoryById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PullRunAsset",
+      "fieldName": "asset",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.Asset",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "assetId",
+        "type": "Long",
+        "columnName": "asset_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.AssetService",
+        "method": "Asset getAssetById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PullRunAsset",
+      "fieldName": "pullRunTextUnitVariants",
+      "relationshipType": "OneToMany",
+      "toEntity": "com.box.l10n.mojito.entity.PullRunTextUnitVariant",
+      "toEntityIdField": "id",
+      "owningSide": false,
+      "targetForeignKeyField": "pullRunAssetId",
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.PullRunTextUnitVariantService",
+        "method": "List<PullRunTextUnitVariant> getPullRunTextUnitVariantsByPullRunAssetId(Long pullRunAssetId)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PushRunAsset",
+      "fieldName": "asset",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.Asset",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "assetId",
+        "type": "Long",
+        "columnName": "asset_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.AssetService",
+        "method": "Asset getAssetById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PushRunAssetTmTextUnit",
+      "fieldName": "tmTextUnit",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.TMTextUnit",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "tmTextUnitId",
+        "type": "Long",
+        "columnName": "tm_text_unit_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.TMTextUnitService",
+        "method": "TMTextUnit getTMTextUnitById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.Commit",
+      "fieldName": "repository",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.Repository",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "repositoryId",
+        "type": "Long",
+        "columnName": "repository_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.RepositoryService",
+        "method": "Repository getRepositoryById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PullRun",
+      "fieldName": "repository",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.Repository",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "repositoryId",
+        "type": "Long",
+        "columnName": "repository_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.RepositoryService",
+        "method": "Repository getRepositoryById(Long id)"
+      }
+    },
+    {
+      "fromEntity": "com.box.l10n.mojito.entity.PullRunTextUnitVariant",
+      "fieldName": "pullRunAsset",
+      "relationshipType": "ManyToOne",
+      "toEntity": "com.box.l10n.mojito.entity.PullRunAsset",
+      "toEntityIdField": "id",
+      "owningSide": true,
+      "newForeignKeyField": {
+        "name": "pullRunAssetId",
+        "type": "Long",
+        "columnName": "pull_run_asset_id"
+      },
+      "lazyLoadServiceMethod": {
+        "service": "com.box.l10n.mojito.entity.PullRunAssetService",
+        "method": "PullRunAsset getPullRunAssetById(Long id)"
+      }
+    }
+  ],
+  "generatedServices": [
+    {
+      "entity": "com.box.l10n.mojito.entity.Repository",
+      "interface": "com.box.l10n.mojito.entity.RepositoryService",
+      "implementation": "com.box.l10n.mojito.entity.RepositoryServiceImpl",
+      "methods": [
+        "Repository getRepositoryById(Long id)"
+      ]
+    },
+    {
+      "entity": "com.box.l10n.mojito.entity.Asset",
+      "interface": "com.box.l10n.mojito.entity.AssetService",
+      "implementation": "com.box.l10n.mojito.entity.AssetServiceImpl",
+      "methods": [
+        "Asset getAssetById(Long id)"
+      ]
+    },
+    {
+      "entity": "com.box.l10n.mojito.entity.PullRunTextUnitVariant",
+      "interface": "com.box.l10n.mojito.entity.PullRunTextUnitVariantService",
+      "implementation": "com.box.l10n.mojito.entity.PullRunTextUnitVariantServiceImpl",
+      "methods": [
+        "List<PullRunTextUnitVariant> getPullRunTextUnitVariantsByPullRunAssetId(Long pullRunAssetId)"
+      ]
+    },
+    {
+      "entity": "com.box.l10n.mojito.entity.TMTextUnit",
+      "interface": "com.box.l10n.mojito.entity.TMTextUnitService",
+      "implementation": "com.box.l10n.mojito.entity.TMTextUnitServiceImpl",
+      "methods": [
+        "TMTextUnit getTMTextUnitById(Long id)"
+      ]
+    },
+    {
+      "entity": "com.box.l10n.mojito.entity.PullRunAsset",
+      "interface": "com.box.l10n.mojito.entity.PullRunAssetService",
+      "implementation": "com.box.l10n.mojito.entity.PullRunAssetServiceImpl",
+      "methods": [
+        "PullRunAsset getPullRunAssetById(Long id)"
+      ]
+    }
+  ]
+}

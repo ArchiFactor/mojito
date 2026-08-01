@@ -13,7 +13,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.ZonedDateTime;
 import org.hibernate.annotations.BatchSize;
 
@@ -32,18 +35,18 @@ import org.hibernate.annotations.BatchSize;
 @BatchSize(size = 1000)
 public class Commit extends AuditableEntity {
 
-  @JsonIgnore
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "repository_id",
-      foreignKey = @ForeignKey(name = "FK__COMMIT__NAME__REPOSITORY_ID"))
+  @Transient
+@JsonIgnore
   private Repository repository;
+
+  @Column(name = "repository_id")
+  private Long repositoryId;
 
   /** Avoid serialization of the full Repository object, include only the IDs. */
   @JsonView(View.Commit.class)
   @JsonProperty("repository_id")
   private Long getRepositoryId() {
-    return repository.getId();
+    return this.getRepository().getId();
   }
 
   /**
@@ -81,11 +84,16 @@ public class Commit extends AuditableEntity {
   private CommitToPullRun commitToPullRun;
 
   public Repository getRepository() {
-    return repository;
-  }
+	if (repository == null && repositoryId != null && ServiceFactory.isContainerAvailable()) {
+		RepositoryService repositoryService = ServiceFactory.getRepositoryService();
+		repository = repositoryService.getRepositoryById(repositoryId);
+	}
+	return repository;
+}
 
   public void setRepository(Repository repository) {
     this.repository = repository;
+	this.repositoryId = repository != null ? repository.getId() : null;
   }
 
   public String getAuthorEmail() {
@@ -134,5 +142,13 @@ public class Commit extends AuditableEntity {
 
   public void setCommitToPullRun(CommitToPullRun commitToPullRun) {
     this.commitToPullRun = commitToPullRun;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.repository != null) {
+		this.repositoryId = this.repository.getId();
+	}
   }
 }

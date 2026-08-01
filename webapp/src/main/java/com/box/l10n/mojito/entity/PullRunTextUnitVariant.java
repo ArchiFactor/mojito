@@ -10,7 +10,10 @@ import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.hibernate.annotations.BatchSize;
 
 /**
@@ -33,12 +36,12 @@ import org.hibernate.annotations.BatchSize;
     })
 @BatchSize(size = 1000)
 public class PullRunTextUnitVariant extends SettableAuditableEntity {
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JsonBackReference
-  @JoinColumn(
-      name = "pull_run_asset_id",
-      foreignKey = @ForeignKey(name = "FK__PULL_RUN_TEXT_UNIT_VARIANT__PULL_RUN_ASSET_ID"))
+  @Transient
+@JsonBackReference
   private PullRunAsset pullRunAsset;
+
+  @Column(name = "pull_run_asset_id")
+  private Long pullRunAssetId;
 
   @Basic(optional = false)
   @ManyToOne(fetch = FetchType.LAZY)
@@ -58,11 +61,16 @@ public class PullRunTextUnitVariant extends SettableAuditableEntity {
   private String outputBcp47Tag;
 
   public PullRunAsset getPullRunAsset() {
-    return pullRunAsset;
-  }
+	if (pullRunAsset == null && pullRunAssetId != null && ServiceFactory.isContainerAvailable()) {
+		PullRunAssetService pullRunAssetService = ServiceFactory.getPullRunAssetService();
+		pullRunAsset = pullRunAssetService.getPullRunAssetById(pullRunAssetId);
+	}
+	return pullRunAsset;
+}
 
   public void setPullRunAsset(PullRunAsset pullRunAsset) {
     this.pullRunAsset = pullRunAsset;
+	this.pullRunAssetId = pullRunAsset != null ? pullRunAsset.getId() : null;
   }
 
   public TMTextUnitVariant getTmTextUnitVariant() {
@@ -79,5 +87,13 @@ public class PullRunTextUnitVariant extends SettableAuditableEntity {
 
   public void setOutputBcp47Tag(String outputBcp47Tag) {
     this.outputBcp47Tag = outputBcp47Tag;
+  }
+
+  @PrePersist
+  @PreUpdate
+  private void syncUnmappedForeignKeys() {
+	if (this.pullRunAsset != null) {
+		this.pullRunAssetId = this.pullRunAsset.getId();
+	}
   }
 }
